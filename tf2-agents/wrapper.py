@@ -12,12 +12,17 @@ class ShrinkWrapper(ObservationWrapper):
 
     def __init__(self, env):
         super(ShrinkWrapper, self).__init__(env)
-        self.observation_space = Box(low=0, high=255, shape=(8, 15), dtype=np.uint8)
+        self.observation_space = Box(low=0, high=255, shape=(16, 30), dtype=np.uint8)
 
     def observation(self, observation):
-        resized = cv2.resize(observation, (15, 16), interpolation=cv2.INTER_NEAREST)  # shape (16, 15, 3)
-        gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)  # shape (16, 15)
-        return gray[8:, :]  # crop, keep lower half -> shape (8, 15)
+        rgb = cv2.cvtColor(observation, cv2.COLOR_BGR2RGB)
+        cv2.imshow("Original Observation", cv2.resize(rgb, (640, 600), interpolation=cv2.INTER_NEAREST))
+        resized = cv2.resize(observation, (30, 32), interpolation=cv2.INTER_NEAREST)  # shape (32, 30, 3)
+        gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)  # shape (32, 30)
+        cropped = gray[16:, :]  # crop, keep lower half -> shape (16, 30, 3)
+        cv2.imshow("Cropped Observation", cv2.resize(cropped, (600, 320), interpolation=cv2.INTER_NEAREST))
+        cv2.waitKey(1)
+        return cropped
 
 
 class DiscreteActionWrapper(ActionWrapper):

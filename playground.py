@@ -13,7 +13,7 @@ print(env.get_keys_to_action())
 done = True
 totalReward = 0
 maxReward = 0
-for step in range(2000):
+for step in range(1000):
     if done:
         state = env.reset()
     action = env.action_space.sample()

@@ -21,22 +21,23 @@ start = time.time()
 tf.compat.v1.enable_v2_behavior()
 
 env_name = 'SuperMarioBros-1-1-v2'
-fc_layer_params = (150,50)
+fc_layer_params = (150, 50)
 learning_rate = 1e-3
-replay_buffer_capacity = 3000
+replay_buffer_capacity = 100000
 initial_collect_steps = 1000
 batch_size = 64
-num_eval_episodes = 3
-max_episode_steps = 750
-num_iterations = 30000
-collect_steps_per_iteration = 3
+num_eval_episodes = 2
+max_episode_steps_train = None
+max_episode_steps_eval = 1000
+num_iterations = 50000
+collect_steps_per_iteration = 1
 log_interval = 100
-eval_interval = 500
+eval_interval = 50000
 
 # create training and evaluation environments
-train_env = TFPyEnvironment(suite_gym.load(env_name, max_episode_steps=max_episode_steps,
+train_env = TFPyEnvironment(suite_gym.load(env_name, max_episode_steps=max_episode_steps_train,
                                            gym_env_wrappers=[ShrinkWrapper, DiscreteActionWrapper]))
-eval_env = TFPyEnvironment(suite_gym.load(env_name, max_episode_steps=max_episode_steps,
+eval_env = TFPyEnvironment(suite_gym.load(env_name, max_episode_steps=max_episode_steps_eval,
                                           gym_env_wrappers=[ShrinkWrapper, DiscreteActionWrapper]))
 
 # create DQN (deep Q-Learning network)
@@ -116,6 +117,7 @@ def compute_avg_reward(environment, policy, num_episodes=10):
     avg_return = total_reward / num_episodes
     return avg_return.numpy()[0]
 
+
 # Evaluate the agent's policy once before training.
 avg_reward = compute_avg_reward(eval_env, tf_agent.policy, num_eval_episodes)
 rewards = [avg_reward]
@@ -142,11 +144,13 @@ for _ in range(num_iterations):
 
 print(f'Finished in {time.time() - start} s')
 
+now = time.strftime('%Y%m%d%H%M%S', time.localtime())
+filename_postfix = f'{now}-fc{fc_layer_params}-i{num_iterations}-ee{num_eval_episodes}-b{batch_size}-lr{learning_rate}'
+
 steps = range(0, num_iterations + 1, eval_interval)
 plt.plot(steps, rewards)
 plt.ylabel('Average Reward')
 plt.xlabel('Step')
 
-now = time.strftime('%Y%m%d%H%M%S', time.localtime())
-plt.savefig(f'results/rewards-{now}-fc{fc_layer_params}-i{num_iterations}-ee{num_eval_episodes}-b{batch_size}-lr{learning_rate}.png')
+plt.savefig(f'results/rewards-{filename_postfix}.png')
 plt.show()
