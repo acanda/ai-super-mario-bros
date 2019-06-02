@@ -15,13 +15,19 @@ from wrapper import ShrinkWrapper, DiscreteActionWrapper
 
 import matplotlib.pyplot as plt
 import time
+import os
 
 start = time.time()
 
 tf.compat.v1.enable_v2_behavior()
 
 env_name = 'SuperMarioBros-1-1-v2'
-fc_layer_params = (150, 50)
+conv_layer_params = [
+    (32, (3, 3), (1, 1)),
+    (64, (3, 3), (1, 1)),
+    (64, (3, 3), (1, 1))
+]
+fc_layer_params = [128]
 learning_rate = 1e-3
 replay_buffer_capacity = 100000
 initial_collect_steps = 1000
@@ -31,8 +37,8 @@ max_episode_steps_train = None
 max_episode_steps_eval = 1000
 num_iterations = 50000
 collect_steps_per_iteration = 1
-log_interval = 100
-eval_interval = 50000
+log_interval = 1000
+eval_interval = 5000
 
 # create training and evaluation environments
 train_env = TFPyEnvironment(suite_gym.load(env_name, max_episode_steps=max_episode_steps_train,
@@ -44,6 +50,7 @@ eval_env = TFPyEnvironment(suite_gym.load(env_name, max_episode_steps=max_episod
 q_net = QNetwork(
     train_env.observation_spec(),
     train_env.action_spec(),
+    conv_layer_params=conv_layer_params,
     fc_layer_params=fc_layer_params)
 
 optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=learning_rate)
@@ -142,15 +149,16 @@ for _ in range(num_iterations):
         print('step = {0}: Average reward = {1}'.format(step, avg_reward))
         rewards.append(avg_reward)
 
-print(f'Finished in {time.time() - start} s')
+print(f'Finished in {(time.time() - start):.0f} s')
 
 now = time.strftime('%Y%m%d%H%M%S', time.localtime())
-filename_postfix = f'{now}-fc{fc_layer_params}-i{num_iterations}-ee{num_eval_episodes}-b{batch_size}-lr{learning_rate}'
+filename_postfix = f'c{list(map(lambda x: x[0], conv_layer_params))}-fc{fc_layer_params}-i{num_iterations}-b{batch_size}-lr{learning_rate}'
 
 steps = range(0, num_iterations + 1, eval_interval)
 plt.plot(steps, rewards)
 plt.ylabel('Average Reward')
 plt.xlabel('Step')
 
-plt.savefig(f'results/rewards-{filename_postfix}.png')
+os.makedirs('results', exist_ok=True)
+plt.savefig(os.path.join('results', f'{now}-rewards-{filename_postfix}.png'))
 plt.show()
